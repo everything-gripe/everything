@@ -14,12 +14,14 @@ export default {
     const originalRedirectUri = decodedState.redirectUri;
     const originalState = decodedState.state;
 
+    // Add or update additional parameters in the modified redirect_uri
+    search.set('state', originalState);
+
     // Construct the modified redirect_uri with the modified query parameters
     const modifiedRedirectUri = new URL(originalRedirectUri);
     modifiedRedirectUri.hash = search.toString();
 
-    // Add or update additional parameters in the modified redirect_uri
-    modifiedRedirectUri.searchParams.set('state', originalState);
+
 
     // Redirect to the modified redirect_uri
     window.location.href = modifiedRedirectUri.href;
