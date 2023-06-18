@@ -8,6 +8,7 @@
     "postinstall": "nuxt prepare"
   },
   "devDependencies": {
+    "@invictus.codes/nuxt-vuetify": "^0.2.20",
     "nuxt": "^3.0.0"
   }
 }
