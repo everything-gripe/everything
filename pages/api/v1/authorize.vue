@@ -2,9 +2,9 @@
   <v-container fluid="">
     <v-row justify="center">
       <v-col cols="12" sm="8" md="3">
-        <v-form ref="authorizeForm" @submit="authenticate">
-          <v-text-field name="site" label="Site" />
-          <v-text-field name="clientId" label="Client ID" type="password" />
+        <v-form @submit="authenticate">
+          <v-text-field name="site" label="Site" v-model="site" />
+          <v-text-field name="clientId" label="Client ID" type="password" v-model="clientId" />
           <v-row justify="end">
             <v-col cols="auto">
               <v-btn type="submit">Authenticate</v-btn>
@@ -19,6 +19,14 @@
 <script>
 export default {
   name: "AuthorizeForm",
+  data() {
+    const searchParams = new URLSearchParams(window.location.search);
+
+    return {
+      site: searchParams.get('set_site'),
+      clientId: searchParams.get('set_client_id'),
+    }
+  },
   methods: {
     authenticate (e) {
       e.preventDefault()
@@ -44,9 +52,12 @@ export default {
       // Add or replace the state parameter redirect_uri, and client_id
       location.searchParams.set('state', encodedState);
       location.searchParams.set('redirect_uri', newRedirectUriValue)
-      location.searchParams.set('client_id', this.$refs.authorizeForm.clientId.value)
+      location.searchParams.set('client_id', this.clientId)
 
-      window.location.href = `${this.$refs.authorizeForm.site.value}${location.pathname}${location.search}`
+      location.searchParams.delete('set_site')
+      location.searchParams.delete('set_client_id')
+
+      window.location.href = `${this.site}${location.pathname}${location.search}`
     }
   }
 };
