@@ -20,11 +20,11 @@
 export default {
   name: "AuthorizeForm",
   data() {
-    const searchParams = new URLSearchParams(window.location.search);
+    const route = useRoute()
 
     return {
-      site: searchParams.get('set_site'),
-      clientId: searchParams.get('set_client_id'),
+      site: route.query.set_site,
+      clientId: route.query.set_client_id,
     }
   },
   methods: {
@@ -33,6 +33,8 @@ export default {
       // Create a URL object from the current URL
       const location = new URL(window.location.href);
 
+      const newRedirectUri = `${location.protocol}//${location.host}/api/v1/redirect`
+
       // Get the original redirect_uri and state from the query string
       const originalRedirectUri = location.searchParams.get('redirect_uri');
       const originalState = location.searchParams.get('state');
@@ -40,24 +42,25 @@ export default {
       // Construct the new state object
       const newState = {
         redirectUri: originalRedirectUri,
-        state: originalState
+        state: originalState,
+        replacementRedirectUri: newRedirectUri,
+        clientId: this.clientId,
+        site: this.site
       };
 
       // Encode the state object as a JSON string
       const encodedState = encodeURIComponent(JSON.stringify(newState));
 
-      // Add or replace the state parameter
-      const newRedirectUriValue = `${location.protocol}//${location.host}/api/v1/redirect`
-
       // Add or replace the state parameter redirect_uri, and client_id
       location.searchParams.set('state', encodedState);
-      location.searchParams.set('redirect_uri', newRedirectUriValue)
+      location.searchParams.set('redirect_uri', newRedirectUri)
       location.searchParams.set('client_id', this.clientId)
 
       location.searchParams.delete('set_site')
       location.searchParams.delete('set_client_id')
 
-      window.location.href = `${this.site}${location.pathname}${location.search}`
+      const siteUrl = new URL(this.site)
+      window.location.href = `${siteUrl.protocol}//www.${siteUrl.host}/api/v1/authorize${location.search}`
     }
   }
 };
