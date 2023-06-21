@@ -1,48 +1,44 @@
-# Nuxt Example
+# Everything
 
-Deploy your [Nuxt](https://nuxt.com) project to Vercel with zero configuration.
+Everything is a middleware solution designed to simplify the process of connecting and aggregating APIs that adhere to the Everything API guidelines. By utilizing Everything, applications can interact with multiple APIs through a single unified interface. Think of it as a way to bring together various services and platforms, enabling seamless integration for developers and users alike.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/vercel/vercel/tree/main/examples/nuxtjs&template=nuxtjs)
+## How it Works
 
-_Live Example: https://nuxtjs-template.vercel.app_
+Let's say you have an app that needs to connect with different services that implement the Everything API. For instance, let's consider a service called Example at `https://example.z.gripe`. With Everything, you can navigate to a specific URL, such as `https://everything.gripe/user/example.z.gripe:everything`. This URL will then redirect or proxy you to `https://example.z.gripe/user/everything`, effectively establishing a connection between your app and the desired API.
 
-Look at the [Nuxt 3 documentation](https://v3.nuxtjs.org) to learn more.
+The benefit of using Everything is that you can consolidate multiple APIs under a single URL, allowing users to authenticate themselves or make requests to different services from one central location.
 
-## Setup
+## Features
 
-Make sure to install the dependencies:
+- **API Aggregation:** Everything acts as a central hub for accessing various APIs that adhere to the Everything API guidelines.
+- **Simplified Integration:** Instead of implementing multiple APIs individually, developers can integrate with Everything, reducing complexity and saving time.
+- **Unified Requests:** By utilizing Everything, apps can make requests to multiple services using a consistent and unified interface.
 
-```bash
-# yarn
-yarn
+## Getting Started
 
-# npm
-npm install
+To get started with Everything, follow these steps:
 
-# pnpm
-pnpm install --shamefully-hoist
-```
+### Making Requests with Everything
 
-## Development Server
+1. Clone the Everything repository: `git clone https://github.com/everything-gripe/everything.git`
+2. Install the required dependencies: `npm install`
+3. Build the project: `npm run build`
+4. Start the development server: `npm run dev`
+5. Access Everything through the provided URL, e.g., `http://localhost:3000`
 
-Start the development server on http://localhost:3000
+### Making Requests with Everything
 
-```bash
-npm run dev
-```
+To make requests to integrated APIs through Everything, follow these steps:
 
-## Production
+1. Determine the API endpoint you want to access through Everything.
+2. Construct the request URL using the Everything URL format, e.g., `http://localhost:3000/user/example.z.gripe:efraimbart`.
+3. Make a request to the constructed URL, and Everything will redirect or proxy the request to the corresponding integrated API.
+4. Handle the response returned by Everything or the integrated API accordingly in your application.
 
-Build the application for production:
+## Contributing
 
-```bash
-npm run build
-```
+We welcome contributions from the community! If you would like to contribute to Everything, please follow the guidelines outlined in [CONTRIBUTING.md](https://github.com/everything-gripe/everything/blob/main/CONTRIBUTING.md).
 
-Locally preview production build:
+## License
 
-```bash
-npm run preview
-```
-
-Checkout the [deployment documentation](https://v3.nuxtjs.org/guide/deploy/presets) for more information.
+Everything is released under the [ISC License](https://github.com/everything-gripe/everything/blob/main/LICENSE).

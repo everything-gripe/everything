@@ -1,5 +1,6 @@
 {
-  "private": true,
+  "version": "0.0.1",
+  "description": "Everything is a middleware that connects and aggregates APIs following the Everything API guidelines. Simplify API integration by accessing multiple services through a single interface. Authenticate users and make requests seamlessly with consolidated APIs. Enhance your app's functionality with Everything.",
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
@@ -10,5 +11,6 @@
   "devDependencies": {
     "@invictus.codes/nuxt-vuetify": "^0.2.20",
     "nuxt": "^3.5.3"
-  }
+  },
+  "license": "ISC"
 }
