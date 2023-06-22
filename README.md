@@ -1,5 +1,8 @@
 # Everything
 
+[![License](https://img.shields.io/badge/license-ISC-blue.svg)](LICENSE.md)
+
+
 Everything is a middleware solution designed to simplify the process of connecting and aggregating APIs that adhere to the Everything API guidelines. By utilizing Everything, applications can interact with multiple APIs through a single unified interface. Think of it as a way to bring together various services and platforms, enabling seamless integration for developers and users alike.
 
 ## How it Works
@@ -37,8 +40,8 @@ To make requests to integrated APIs through Everything, follow these steps:
 
 ## Contributing
 
-We welcome contributions from the community! If you would like to contribute to Everything, please follow the guidelines outlined in [CONTRIBUTING.md](https://github.com/everything-gripe/everything/blob/main/CONTRIBUTING.md).
+Contributions are welcome! If you would like to contribute to Everything, please follow the guidelines outlined in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-Everything is released under the [ISC License](https://github.com/everything-gripe/everything/blob/main/LICENSE).
+Everything is released under the [ISC License](LICENSE.md).
