@@ -21,8 +21,6 @@ The benefit of using Everything is that you can consolidate multiple APIs under 
 
 To get started with Everything, follow these steps:
 
-### Making Requests with Everything
-
 1. Clone the Everything repository: `git clone https://github.com/everything-gripe/everything.git`
 2. Install the required dependencies: `npm install`
 3. Build the project: `npm run build`
@@ -44,4 +42,4 @@ Contributions are welcome! If you would like to contribute to Everything, please
 
 ## License
 
-Everything is released under the [ISC License](LICENSE.md).
+Everything is licensed under the [ISC License](LICENSE.md).

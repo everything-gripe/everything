@@ -1,6 +1,6 @@
 export default {
   nitro: {
-    preset: 'vercel-edge',
+    preset: 'vercel',
   },
   modules: [
     '@invictus.codes/nuxt-vuetify'

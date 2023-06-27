@@ -12,5 +12,8 @@
     "@invictus.codes/nuxt-vuetify": "^0.2.20",
     "nuxt": "^3.5.3"
   },
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "everything-sdk": "^0.5.3"
+  }
 }
