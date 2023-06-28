@@ -1,7 +1,7 @@
 ﻿import {addZDomain, constructSiteUrl, replaceOauthSubdomain} from "~/utils";
 import {Everything, Kind} from "everything-sdk";
 
-const siteRegex = /([a-zA-Z0-9.-:]+):([a-zA-Z0-9.-~]*)/g
+const siteRegex = /([a-zA-Z0-9.-:]+):([^+]*)/g
 
 async function redirectOrProxy(event, requestUrl, {pathSite, pathSegments}, hasAuth, authSite, authType, accessToken, clientId, htmlAcceptHeader) {
     const requestHostname = requestUrl.hostname
@@ -18,8 +18,7 @@ async function redirectOrProxy(event, requestUrl, {pathSite, pathSegments}, hasA
     if (htmlAcceptHeader) {
         return sendRedirect(event, url.toString())
     } else {
-        console.log(url.toString())
-        return await proxyRequest(event, url.toString(), {
+        const response = await proxyRequest(event, url.toString(), {
             headers: {
                 //IMPORTANT: These are case-sensitive
                 authorization: hasAuth ? `${authType} ${accessToken}` : undefined,
@@ -42,7 +41,8 @@ async function redirectOrProxy(event, requestUrl, {pathSite, pathSegments}, hasA
                 proxyResponse._data = body
                 return proxyResponse
             }
-        })
+        });
+        return response
     }
 }
 
@@ -57,9 +57,7 @@ export default defineEventHandler(async (event) => {
         requestLastPath.startsWith('refresh') ||
         requestLastPath.startsWith('access_token')) return
 
-    let pathSegments = requestPath.split('/')
-
-    const pathSiteSegments = pathSegments.reduce((pathSites, segment, currentIndex, segments) => {
+    const pathSiteSegments = requestPathSegments.reduce((pathSites, segment, currentIndex, segments) => {
         if (!pathSites.length) {
             const matches = segment.matchAll(siteRegex)
             for (const match of matches) {
@@ -100,12 +98,15 @@ export default defineEventHandler(async (event) => {
 
     if (!hasAuth && !pathSiteSegments.length) return
 
-    if (pathSiteSegments.length === 1 || htmlAcceptHeader) {
-        return await redirectOrProxy(event, requestUrl, pathSiteSegments[0], hasAuth, authSite, authType, clientId, accessToken, htmlAcceptHeader);
+    if (pathSiteSegments.length <= 1 || htmlAcceptHeader) {
+        if (!pathSiteSegments.length) {
+            pathSiteSegments.push({pathSegments: requestPathSegments})
+        }
+        return await redirectOrProxy(event, requestUrl, pathSiteSegments[0], hasAuth, authSite, authType, accessToken, clientId, htmlAcceptHeader);
     } else {
         const responses = await Promise.all(pathSiteSegments.map(async ({pathSite, pathSegments}) => {
             const response =
-                JSON.parse(await redirectOrProxy(event, requestUrl, {pathSite, pathSegments}, hasAuth, authSite, authType, clientId, accessToken, htmlAcceptHeader))
+                JSON.parse(await redirectOrProxy(event, requestUrl, {pathSite, pathSegments}, hasAuth, authSite, authType, accessToken, clientId, htmlAcceptHeader))
 
             return {
                 response,
