@@ -17,11 +17,10 @@ export function addZDomain(requestDomainSegments) {
     return segments
 }
 
-export function constructSiteUrl(siteUrl, requestUrl, {path, replaceOauthSubdomain: shouldReplaceOauthSubdomain = false} = {}) {
+export function constructSiteUrl(siteUrl, requestUrl, {path, search, replaceOauthSubdomain: shouldReplaceOauthSubdomain = false} = {}) {
     const requestDomain = requestUrl.hostname
     const requestDomainSegments = requestDomain.split('.')
     let requestSubdomainSegments = requestDomainSegments.slice(0, -2)
-    const requestSearch = requestUrl.search
     let siteUrlDomainSegments = siteUrl.host.split('.')
 
     if (shouldReplaceOauthSubdomain) {
@@ -36,6 +35,7 @@ export function constructSiteUrl(siteUrl, requestUrl, {path, replaceOauthSubdoma
     siteUrlHost = siteUrl.port ? `${siteUrlHost}:${siteUrl.port}` : siteUrlHost
 
     path ||= requestUrl.pathname
+    search ||= requestUrl.searchParams
 
-    return new URL(`${siteUrl.protocol}//${requestSubdomain}${siteUrlHost}${path}${requestSearch}`);
+    return new URL(`${siteUrl.protocol}//${requestSubdomain}${siteUrlHost}${path}?${search}`);
 }

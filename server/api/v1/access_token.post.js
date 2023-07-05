@@ -2,14 +2,14 @@
 
 function clientCredentials(body) {
     const newAccessToken = {
-        ignore: true
+        ignore: true,
     }
 
     return {
         access_token: encodeURIComponent(JSON.stringify(newAccessToken)),
         token_type: 'bearer',
         expires_in: 4117387382,
-        scope: body.scope,
+        scope: body.scope || '',
     }
 }
 
@@ -25,8 +25,6 @@ async function token(requestUrl, encodedResponse, body) {
 
     const siteUrl = new URL(site)
     const accessTokenUrl = constructSiteUrl(siteUrl, requestUrl)
-
-    console.log(accessTokenUrl)
 
     const accessTokenResponse = await fetch(accessTokenUrl, {
         method: "POST",
