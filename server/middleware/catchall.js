@@ -1,13 +1,14 @@
 ﻿import {addZDomain, constructSiteUrl, replaceOauthSubdomain} from "~/utils";
 import {Everything, Kind} from "everything-sdk";
 
+const runtimeConfig = useRuntimeConfig()
 const siteRegex = /^([a-zA-Z0-9.-:]+):(.*?)$/
 const searchParams = ['before', 'after', 'query']
 
 async function redirectOrProxy(event, requestUrl, {pathSite, pathSegments, searchParams}, hasAuth, authSite, authType, accessToken, clientId, htmlAcceptHeader) {
     const requestHostname = requestUrl.hostname
     const requestDomainSegments = requestHostname.split('.')
-    const siteUrl = new URL((pathSite || authSite).replace('.z.gripe', ''))
+    const siteUrl = new URL((pathSite || authSite)  /*using .replace here causes the returned display name to be different than the entered one, causing potential issues. (Infinity will go into an infinite request loop) .replace(runtimeConfig.public.baseServiceDomain, '')*/)
     const search = searchParams
         ? new URLSearchParams({
             ...Object.fromEntries(requestUrl.searchParams),
@@ -18,10 +19,9 @@ async function redirectOrProxy(event, requestUrl, {pathSite, pathSegments, searc
     const url = constructSiteUrl(siteUrl, requestUrl, {
         path: pathSegments.join('/'),
         search: search,
-        replaceOauthSubdomain: !hasAuth
+        replaceOauthSubdomain: !hasAuth,
+        addJsonToPath: !hasAuth && !htmlAcceptHeader
     });
-
-    console.log(searchParams, url)
 
     if (clientId) {
         url.searchParams.set("client_id", clientId)
@@ -35,10 +35,7 @@ async function redirectOrProxy(event, requestUrl, {pathSite, pathSegments, searc
                 authorization: hasAuth ? `${authType} ${accessToken}` : undefined,
                 'user-agent': 'everything:0.0.1'
             },
-            fetch: async (target, init) => {
-                const proxyResponse = await fetch(target, init)
-                const {status, statusText, headers, ...rest} = proxyResponse;
-
+            onResponse: async (event, proxyResponse) => {
                 let body = await proxyResponse.text();
                 // const regex = RegExp(`((https?:\\/\\/)?([a-z0-9-]+\\.)*${escapeRegex(siteUrl.host)})/?`, 'gm')
                 const regex = RegExp(`(?:https?:\\/\\/)?(?:[a-z0-9-]+\\.)*${escapeRegex(addZDomain(siteUrl.hostname.split('.')).join('.'))}((?:\\/[ru]|user|comments)\\/)`, 'gm')
@@ -47,16 +44,14 @@ async function redirectOrProxy(event, requestUrl, {pathSite, pathSegments, searc
                     .replaceAll(regex, (substring, ...args) => `${requestUrl.protocol}//${replaceOauthSubdomain(requestDomainSegments).join('.')}${args[0]}${siteUrl.host}:`)
                     .replaceAll(/(?<=[\s"])((\/?[ru]|user|comments)\/)/gm, `$1${siteUrl.host}:`)
                     .replaceAll(RegExp(`("(?:display_name|subreddit|author)":\\s*")(.*?",?)`, 'gm'), `$1${siteUrl.host}:$2`)
-                    // .replaceAll(RegExp(`("(?:display_name|subreddit|author|id)":\\s*")(.*?",?)`, 'gm'), `$1${siteUrl.host}:$2`)
+                // .replaceAll(RegExp(`("(?:display_name|subreddit|author|id)":\\s*")(.*?",?)`, 'gm'), `$1${siteUrl.host}:$2`)
                 // .replaceAll('preview.redd.it/', `images.${requestDomainSegments.slice(requestDomainSegments.length - 2).join('.')}/preview.redd.it:`)
 
                 proxyResponse._data = body
-                return proxyResponse
             }
         });
         return response
     }
-
 }
 
 function matchSegment(segment)
@@ -121,7 +116,6 @@ function processSegments(requestSearch, pathSites, segment, currentIndex, segmen
         } else {
             for (const result of results) {
                 const pathSite = pathSites.find(pathSite => pathSite.pathSite === pathSiteHttp(result.pathSite))
-                console.log('pathSites:', pathSites, 'resultPathSite:', pathSiteHttp(result.pathSite))
                 pathSite.pathSegments.push(result.value)
             }
         }
@@ -132,6 +126,59 @@ function processSegments(requestSearch, pathSites, segment, currentIndex, segmen
     }
 
     return pathSites
+}
+
+function combineResponses(successfulResponses, requestPathSegments) {
+    switch (successfulResponses[0].response.kind) {
+        case Kind.List:
+            const interspersed = [...intersperse(...successfulResponses.map(({response}) => response.data.children))]
+            const after = combineWithPathSite(successfulResponses, data => data.after)
+            const before = combineWithPathSite(successfulResponses, data => data.before)
+            const dist = interspersed.length
+
+            return Everything.list({
+                before,
+                after,
+                dist,
+                children: interspersed
+            })
+        case Kind.User: {
+            const displayName = requestPathSegments[2]
+
+            return Everything.user({
+                name: displayName,
+                subreddit: {
+                    name: combine(successfulResponses, data => data.subreddit.name),
+                    display_name: `u_${displayName}`,
+                    display_name_prefixed: `u/${displayName}`,
+                    subreddit_type: `user`,
+                    url: `/user/${displayName}`
+                }
+            })
+        }
+
+        case Kind.Group: {
+            const displayName = requestPathSegments[2]
+
+            return Everything.group({
+                name: combine(successfulResponses, data => data.name),
+                display_name: displayName,
+                display_name_prefixed: `r/${displayName}`,
+            })
+        }
+        case Kind.Post:
+        case Kind.Comment:
+            if (successfulResponses.length === 1) {
+                return successfulResponses[0].response
+            } else {
+                return
+            }
+        default:
+            if (Array.isArray(successfulResponses[0].response)) {
+
+                return successfulResponses[0].response.map((_, index) => combineResponses(successfulResponses.map(({pathSite, response}) => ({pathSite, response: response[index]})), requestPathSegments))
+            }
+    }
 }
 
 export default defineEventHandler(async (event) => {
@@ -150,6 +197,13 @@ export default defineEventHandler(async (event) => {
 
     const authHeader = getHeader(event, 'Authorization')
     const htmlAcceptHeader = getHeader(event, 'Accept')?.toLowerCase().includes('text/html')
+    if (htmlAcceptHeader) {
+        const client = new URL(requestUrl)
+        const hostParts = client.hostname.split('.')
+        hostParts.splice(-2, 0, 'client')
+        client.hostname = hostParts.join('.')
+        return sendRedirect(event, client.toString())
+    }
 
     if (authHeader) {
         try {
@@ -166,15 +220,27 @@ export default defineEventHandler(async (event) => {
         }
     }
 
-    const hasAuth = authHeader && !ignore;
+    const hasAuth = authHeader && authType && !ignore;
 
-    if (!hasAuth && !pathSiteSegments.length) return
+    if (!hasAuth && !pathSiteSegments.length) {
+        const defaultServices = runtimeConfig.public.defaultServices
+        const pathSegments = requestPathSegments
+        if (pathSegments[1] === 'r' && ['all', 'popular'].includes(pathSegments[2])) {
+            pathSegments.splice(1, 2)
+        }
+        for (const service of defaultServices) {
+            pathSiteSegments.push({
+                pathSite: pathSiteHttp(service),
+                pathSegments: pathSegments
+            })
+        }
+    }
 
     if (pathSiteSegments.length <= 1 || htmlAcceptHeader) {
         const siteSegments = pathSiteSegments.length ? pathSiteSegments[0] : {pathSegments: requestPathSegments};
         return await redirectOrProxy(event, requestUrl, siteSegments, hasAuth, authSite, authType, accessToken, clientId, htmlAcceptHeader);
     } else {
-        const responses = await Promise.all(pathSiteSegments.map(async siteSegments => {
+        const responses = await Promise.allSettled(pathSiteSegments.map(async siteSegments => {
             const response =
                 JSON.parse(await redirectOrProxy(event, requestUrl, siteSegments, hasAuth, authSite, authType, accessToken, clientId, htmlAcceptHeader))
 
@@ -184,26 +250,13 @@ export default defineEventHandler(async (event) => {
             }
         }))
 
-        switch (responses[0].response.kind) {
-            case Kind.List:
-                const interspersed = [...intersperse(...responses.map(({response}) => response.data.children))]
-                const after = combineWithPathSite(responses, data => data.after)
-                const before = combineWithPathSite(responses, data => data.before)
-                const dist = interspersed.length
+        event.node.res.statusCode = 200
+        event.node.res.statusMessage = undefined
 
-                return Everything.list({
-                    before,
-                    after,
-                    dist,
-                    children: interspersed
-                })
-            case Kind.Group:
-                return Everything.group({
-                    name: combine(responses, data => data.name),
-                    display_name: combine(responses, data => data.display_name),
-                    display_name_prefixed: combine(responses, data => data.display_name),
-                })
-        }
+        const successfulResponses = responses.filter(response => response.status === "fulfilled" && !response.value.response.error && !response.value.response.status).map(response => response.value)
+        if (!successfulResponses.length) return
+
+        return combineResponses(successfulResponses, requestPathSegments);
     }
 })
 
@@ -222,6 +275,8 @@ function* intersperse(...arrays) {
 
 
 function combineWithPathSite(responses, func) {
+    if (!responses.filter(({response}) => func(response.data)).length) return
+
     return responses.map(({response, pathSite}) => `${pathSite}:${func(response.data) ?? ''}`).join('+');
 }
 

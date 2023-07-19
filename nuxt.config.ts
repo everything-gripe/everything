@@ -1,4 +1,4 @@
-export default {
+export default defineNuxtConfig({
   nitro: {
     preset: 'vercel',
   },
@@ -21,4 +21,13 @@ export default {
       // autoImport: true | false,
     }
   },
-};
+  routeRules: {
+    '/**': {cors: true}
+  },
+  runtimeConfig: {
+    public: {
+      defaultServices: JSON.parse(process.env.DEFAULT_SERVICES || ''),
+      baseServiceDomain: process.env.BASE_SERVICE_DOMAIN
+    }
+  }
+});

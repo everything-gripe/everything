@@ -59,6 +59,8 @@ async function token(requestUrl, encodedResponse, body) {
 }
 
 export default defineEventHandler(async (event) => {
+    //Hack for https://github.com/unjs/h3/issues/437
+    event.node.req.headers["content-type"] = event.node.req.headers["content-type"].replace('; charset=utf-8', '')
     const requestUrl = new URL(getRequestURL(event))
 
     const {code: encodedCodeResponse, refresh_token: encodedRefreshResponse, redirect_uri: redirectUri, ...body} = await readBody(event)
